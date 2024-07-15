@@ -1,5 +1,9 @@
 import json
 from netaddr import IPNetwork
+from django.contrib.contenttypes.models import ContentType
+from virtualization.models import VirtualMachine, VMInterface
+from ipam.models import IPAddress
+from dcim.models import Device, Interface
 
 
 class LabelDict(dict):
@@ -79,6 +83,33 @@ def extract_primary_ip(obj, labels: LabelDict):
         labels["primary_ip6"] = str(IPNetwork(obj.primary_ip6.address).ip)
 
 
+def extract_ips(obj, labels: LabelDict):
+    if isinstance(obj, Device):
+        interfaces = Interface.objects.filter(device__id=obj.pk).values("pk")
+        object_type = ContentType.objects.get_for_model(Interface)
+    elif isinstance(obj, VirtualMachine):
+        interfaces = VMInterface.objects.filter(virtual_machine__id=obj.pk).values("pk")
+        object_type = ContentType.objects.get_for_model(VMInterface)
+    else:
+        return
+
+    ips = IPAddress.objects.filter(assigned_object_type=object_type, assigned_object_id__in=interfaces).values(
+        "address", "dns_name"
+    )
+
+    for ip in ips:
+        suffix = ip.get("dns_name").split(".")[0].split("-")[-1]
+        if suffix == "int":
+            labels["int_ip"] = str(ip.get("address").ip)
+            labels["int_name"] = ip.get("dns_name")
+        elif suffix == "ext":
+            labels["ext_ip"] = str(ip.get("address").ip)
+            labels["ext_name"] = ip.get("dns_name")
+        elif suffix == "vpn":
+            labels["vpn_ip"] = str(ip.get("address").ip)
+            labels["vpn_name"] = ip.get("dns_name")
+
+
 def extract_oob_ip(obj, labels: LabelDict):
     if getattr(obj, "oob_ip", None) is not None:
         labels["oob_ip"] = str(IPNetwork(obj.oob_ip.address).ip)
@@ -124,8 +155,12 @@ def extract_rack(obj, labels: LabelDict):
 def extract_custom_fields(obj, labels: LabelDict):
     if hasattr(obj, "custom_field_data") and obj.custom_field_data is not None:
         for key, value in obj.custom_field_data.items():
+            # Render prometheus labels as list of strings
+            if isinstance(value, dict) and key.lower() == "prometheus_labels":
+                for label_key, label_value in value.items():
+                    labels[f"custom_field_{key.lower()}_{label_key.lower()}"] = str(label_value)
             # Render primitive value as string representation
-            if not hasattr(value, '__dict__'):
+            elif not hasattr(value, "__dict__"):
                 labels["custom_field_" + key.lower()] = str(value)
             # Complex types are rendered as json
             else:
@@ -145,7 +180,7 @@ def extract_prometheus_sd_config(obj, labels):
 
 
 def extract_parent(obj, labels: LabelDict):
-    labels['parent'] = obj.parent.name
+    labels["parent"] = obj.parent.name
     extract_primary_ip(obj.parent, labels)
     extract_oob_ip(obj.parent, labels)
     extract_tenant(obj.parent, labels)
