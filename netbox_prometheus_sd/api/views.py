@@ -30,15 +30,11 @@ from .utils import NETBOX_RELEASE_CURRENT, NETBOX_RELEASE_41
 # https://github.com/netbox-community/netbox/commit/1024782b9e0abb48f6da65f8248741227d53dbed#diff-d9224204dab475bbe888868c02235b8ef10f07c9201c45c90804d395dc161c40
 try:
     from ipam.filtersets import IPAddressFilterSet
-    from dcim.filtersets import DeviceFilterSet
-    from virtualization.filtersets import VirtualMachineFilterSet
 except ImportError:
     from ipam.filters import IPAddressFilterSet
-    from dcim.filters import DeviceFilterSet
-    from virtualization.filters import VirtualMachineFilterSet
 
 
-from ..filtersets import ServiceFilterSet
+from ..filtersets import ServiceFilterSet, DeviceFilterSet, VirtualMachineFilterSet
 from .serializers import (
     PrometheusIPAddressSerializer,
     PrometheusDeviceSerializer,
