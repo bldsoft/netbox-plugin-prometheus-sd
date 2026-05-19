@@ -74,20 +74,36 @@ def extract_cluster(obj, labels: LabelDict):
             if obj.cluster.scope:
                 labels["scope"] = obj.cluster.scope.name
                 labels["scope_slug"] = obj.cluster.scope.slug
+                # If the scope is a Site, expose its parent SiteGroup
+                scope_group = getattr(obj.cluster.scope, "group", None)
+                if scope_group is not None:
+                    labels["site_group"] = scope_group.name
+                    labels["site_group_slug"] = scope_group.slug
         except AttributeError: # Netbox <4.2
             if obj.cluster.site:
                 labels["site"] = obj.cluster.site.name
                 labels["site_slug"] = obj.cluster.site.slug
+                if obj.cluster.site.group is not None:
+                    labels["site_group"] = obj.cluster.site.group.name
+                    labels["site_group_slug"] = obj.cluster.site.group.slug
 
     # Has precedence over cluster scope
     if hasattr(obj, "scope") and obj.scope is not None:
         labels["scope"] = obj.scope.name
         labels["scope_slug"] = obj.scope.slug
+        # If the scope is a Site, expose its parent SiteGroup
+        scope_group = getattr(obj.scope, "group", None)
+        if scope_group is not None:
+            labels["site_group"] = scope_group.name
+            labels["site_group_slug"] = scope_group.slug
 
     # Still Return site labels for Devices
     if hasattr(obj, "site") and obj.site is not None:
         labels["site"] = obj.site.name
         labels["site_slug"] = obj.site.slug
+        if obj.site.group is not None:
+            labels["site_group"] = obj.site.group.name
+            labels["site_group_slug"] = obj.site.group.slug
 
 
 def extract_primary_ip(obj, labels: LabelDict):

@@ -99,6 +99,16 @@ class PrometheusVirtualMachineSerializerTests(TestCase):
                     {"__meta_netbox_site_slug": "campus-a"}, data["labels"]
                 )
             )
+            self.assertTrue(
+                utils.dictContainsSubset(
+                    {"__meta_netbox_site_group": "Campus Group"}, data["labels"]
+                )
+            )
+            self.assertTrue(
+                utils.dictContainsSubset(
+                    {"__meta_netbox_site_group_slug": "campus-group"}, data["labels"]
+                )
+            )
             if NETBOX_RELEASE_CURRENT > NETBOX_RELEASE_41:
                 self.assertTrue(
                     utils.dictContainsSubset(
@@ -240,6 +250,16 @@ class PrometheusDeviceSerializerTests(TestCase):
                 {"__meta_netbox_site_slug": "site"}, data["labels"]
             )
         )
+        self.assertTrue(
+            utils.dictContainsSubset(
+                {"__meta_netbox_site_group": "Main Group"}, data["labels"]
+            )
+        )
+        self.assertTrue(
+            utils.dictContainsSubset(
+                {"__meta_netbox_site_group_slug": "main-group"}, data["labels"]
+            )
+        )
 
     def test_device_config_context_no_array(self):
         instance = utils.build_device_config_context_no_array("firewall-no-array-01")
@@ -319,6 +339,16 @@ class PrometheusDeviceSerializerTests(TestCase):
         self.assertTrue(
             utils.dictContainsSubset(
                 {"__meta_netbox_site_slug": "site"}, data["labels"]
+            )
+        )
+        self.assertTrue(
+            utils.dictContainsSubset(
+                {"__meta_netbox_site_group": "Main Group"}, data["labels"]
+            )
+        )
+        self.assertTrue(
+            utils.dictContainsSubset(
+                {"__meta_netbox_site_group_slug": "main-group"}, data["labels"]
             )
         )
         self.assertTrue(
@@ -480,6 +510,16 @@ class PrometheusServiceSerializerTests(TestCase):
             )
             self.assertTrue(
                 utils.dictContainsSubset(
+                    {"__meta_netbox_site_group": "Main Group"}, data["labels"]
+                )
+            )
+            self.assertTrue(
+                utils.dictContainsSubset(
+                    {"__meta_netbox_site_group_slug": "main-group"}, data["labels"]
+                )
+            )
+            self.assertTrue(
+                utils.dictContainsSubset(
                     {"__meta_netbox_primary_ip": "2001:db8:1701::2"}, data["labels"]
                 )
             )
@@ -537,6 +577,16 @@ class PrometheusServiceSerializerTests(TestCase):
             self.assertTrue(
                 utils.dictContainsSubset(
                     {"__meta_netbox_site_slug": "campus-a"}, data["labels"]
+                )
+            )
+            self.assertTrue(
+                utils.dictContainsSubset(
+                    {"__meta_netbox_site_group": "Campus Group"}, data["labels"]
+                )
+            )
+            self.assertTrue(
+                utils.dictContainsSubset(
+                    {"__meta_netbox_site_group_slug": "campus-group"}, data["labels"]
                 )
             )
             if NETBOX_RELEASE_CURRENT > NETBOX_RELEASE_41:

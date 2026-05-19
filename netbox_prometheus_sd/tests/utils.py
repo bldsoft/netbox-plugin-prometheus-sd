@@ -2,7 +2,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldError
 
 from dcim.models.devices import DeviceType, Manufacturer
-from dcim.models.sites import Site, Location
+from dcim.models.sites import Site, SiteGroup, Location
 from dcim.models import Device, DeviceRole, Platform, Rack
 from extras.models import ConfigContext, Tag
 
@@ -22,7 +22,24 @@ def dictContainsSubset(subset, fullset):
     return set(subset.items()).issubset(set(fullset.items()))
 
 
+def build_site(name, slug, group_name=None, group_slug=None):
+    """Get or create a Site, optionally associated with a SiteGroup."""
+    site, _ = Site.objects.get_or_create(name=name, slug=slug)
+    if group_name and group_slug:
+        group, _ = SiteGroup.objects.get_or_create(name=group_name, slug=group_slug)
+        if site.group_id != group.id:
+            site.group = group
+            site.save()
+    return site
+
+
 def build_cluster():
+    site = build_site(
+        name="Campus A",
+        slug="campus-a",
+        group_name="Campus Group",
+        group_slug="campus-group",
+    )
     try: # NetBox 4.2+
         scope_type = ContentType.objects.get_for_model(Site)
         return Cluster.objects.get_or_create(
@@ -30,14 +47,14 @@ def build_cluster():
             group=ClusterGroup.objects.get_or_create(name="VMware")[0],
             type=ClusterType.objects.get_or_create(name="On Prem")[0],
             scope_type=scope_type,
-            scope_id=Site.objects.get_or_create(name="Campus A", slug="campus-a")[0].id,
+            scope_id=site.id,
         )[0]
     except FieldError: # NetBox <4.2
         return Cluster.objects.get_or_create(
             name="DC1",
             group=ClusterGroup.objects.get_or_create(name="VMware")[0],
             type=ClusterType.objects.get_or_create(name="On Prem")[0],
-            site=Site.objects.get_or_create(name="Campus A", slug="campus-a")[0],
+            site=site,
         )[0]
 
 
@@ -45,7 +62,12 @@ def build_location():
     return Location.objects.get_or_create(
         name="First Floor",
         slug="first-floor",
-        site=Site.objects.get_or_create(name="Site", slug="site")[0],
+        site=build_site(
+            name="Site",
+            slug="site",
+            group_name="Main Group",
+            group_slug="main-group",
+        ),
     )[0]
 
 
@@ -129,7 +151,12 @@ def build_minimal_device(name):
                 name="Juniper", slug="juniper"
             )[0],
         )[0],
-        site=Site.objects.get_or_create(name="Site", slug="site")[0],
+        site=build_site(
+            name="Site",
+            slug="site",
+            group_name="Main Group",
+            group_slug="main-group",
+        ),
         **{
             role_attr: DeviceRole.objects.get_or_create(
                 name="Firewall", slug="firewall"
@@ -222,9 +249,20 @@ def build_device_full(name, ip_octet=1):
     )[0]
     device.oob_ip = IPAddress.objects.get_or_create(address=f"10.0.0.{ip_octet}/24")[0]
     device.rack = Rack.objects.get_or_create(
-        name="R01B01", site=Site.objects.get_or_create(name="Site", slug="site")[0]
+        name="R01B01",
+        site=build_site(
+            name="Site",
+            slug="site",
+            group_name="Main Group",
+            group_slug="main-group",
+        ),
     )[0]
-    device.site = Site.objects.get_or_create(name="Site", slug="site")[0]
+    device.site = build_site(
+        name="Site",
+        slug="site",
+        group_name="Main Group",
+        group_slug="main-group",
+    )
     device.tags.add("Tag1")
     device.tags.add("Tag 2")
     device.save()
